@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메인 페이지</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #333;
+            margin-top: 50px;
+        }
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px; /* Space between game items */
+            margin-top: 40px;
+            flex-wrap: wrap; /* Allows wrapping of items to new rows */
+        }
+        .game-item {
+            text-align: center;
+            display: flex;
+            flex-direction: column; /* Stack the text and image vertically */
+            align-items: center; /* Center the items horizontally */
+        }
+        .game-btn {
+            font-size: 18px;
+            padding: 15px 30px;
+            margin-top: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        .game-btn:hover {
+            background-color: #45a049;
+        }
+        .game-btn:active {
+            background-color: #388e3c;
+        }
+        .game-btn:focus {
+            outline: none;
+        }
+        .game-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>게임 허브에 오신 것을 환영합니다!</h1>
+    <p>플레이할 게임을 선택하세요:</p>
+
+    <div class="game-container">
+        <div class="game-item">
+            <a href="/rock-paper-scissors" class="game-btn">가위 바위 보</a>
+            <img src="{{ url_for('static', filename='images/rock-paper-scissors.png') }}" alt="가위 바위 보" class="game-image">
+        </div>
+        
+        <div class="game-item">
+            <a href="/maze-game" class="game-btn">미로 탐색</a>
+            <img src="{{ url_for('static', filename='images/maze-game.png') }}" alt="미로 탐색" class="game-image">
+        </div>
+
+        <div class="game-item">
+            <a href="/roguelike" class="game-btn">스토리 게임</a>
+            <img src="{{ url_for('static', filename='images/roguelike.png') }}" alt="세 번째 게임" class="game-image">
+        </div>
+    </div>
+</body>
+</html>

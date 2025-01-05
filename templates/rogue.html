@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그라이크 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 50px;
+        }
+
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .button-container {
+            margin-top: 40px;
+        }
+
+        .button {
+            font-size: 18px;
+            padding: 15px 30px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .button:active {
+            background-color: #388e3c;
+        }
+
+        .button:focus {
+            outline: none;
+        }
+
+        .game-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+            gap: 40px;
+        }
+
+        .game-item {
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>로그라이크 게임에 오신 것을 환영합니다!</h1>
+    <p>게임을 시작하려면 아래 버튼을 클릭하세요.</p>
+
+    <div class="button-container">
+        <a href="{{ url_for('character_select') }}" class="button">게임 시작</a>
+    </div>
+
+    <div class="button-container">
+        <a href="/" class="button" style="background-color: #e74c3c;">메인 페이지로 이동</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{
+  "stages": [
+      {
+          "stage": 1,
+          "player": {
+              "hp": 5,
+              "attack": 2,
+              "defense": 0
+          },
+          "enemy": {
+              "hp": 50,
+              "attack": 10,
+              "defense": 3
+          }
+      },
+      {
+          "stage": 2,
+          "player": {
+              "hp": 5,
+              "attack": 2,
+              "defense": 1
+          },
+          "enemy": {
+              "hp": 60,
+              "attack": 12,
+              "defense": 4
+          }
+      },
+      {
+          "stage": 3,
+          "player": {
+              "hp": 6,
+              "attack": 3,
+              "defense": 1
+          },
+          "enemy": {
+              "hp": 80,
+              "attack": 15,
+              "defense": 5
+          }
+      },
+      {
+          "stage": 4,
+          "player": {
+              "hp": 7,
+              "attack": 3,
+              "defense": 1
+          },
+          "enemy": {
+              "hp": 100,
+              "attack": 18,
+              "defense": 6
+          }
+      },
+      {
+          "stage": 5,
+          "player": {
+              "hp": 8,
+              "attack": 4,
+              "defense": 2
+          },
+          "enemy": {
+              "hp": 130,
+              "attack": 22,
+              "defense": 8
+          }
+      },
+      {
+          "stage": 6,
+          "player": {
+              "hp": 10,
+              "attack": 5,
+              "defense": 2
+          },
+          "enemy": {
+              "hp": 170,
+              "attack": 28,
+              "defense": 10
+          }
+      },
+      {
+          "stage": 7,
+          "player": {
+              "hp": 12,
+              "attack": 6,
+              "defense": 3
+          },
+          "enemy": {
+              "hp": 220,
+              "attack": 35,
+              "defense": 12
+          }
+      },
+      {
+          "stage": 8,
+          "player": {
+              "hp": 14,
+              "attack": 7,
+              "defense": 3
+          },
+          "enemy": {
+              "hp": 290,
+              "attack": 42,
+              "defense": 15
+          }
+      },
+      {
+          "stage": 9,
+          "player": {
+              "hp": 16,
+              "attack": 8,
+              "defense": 4
+          },
+          "enemy": {
+              "hp": 380,
+              "attack": 50,
+              "defense": 18
+          }
+      },
+      {
+          "stage": 10,
+          "player": {
+              "hp": 18,
+              "attack": 10,
+              "defense": 5
+          },
+          "enemy": {
+              "hp": 500,
+              "attack": 60,
+              "defense": 22
+          }
+      }
+  ]
+}

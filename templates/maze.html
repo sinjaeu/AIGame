@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 미로탐색</title>
+    <style>
+        /* 기존 스타일 유지 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        td {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .wall {
+            background-color: #FF0000;
+        }
+        .path {
+            background-color: #fff;
+        }
+        .agent {
+            background-color: #00FF00;
+        }
+        .goal {
+            background-color: #FFFF00;
+        }
+        .start {
+            background-color: #0000FF;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 15px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 15px;
+            font-size: 18px;
+            color: #f44336;
+        }
+        #step-info {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+        #attempt-count {
+            font-weight: bold;
+            font-size: 18px;
+            color: #2196F3;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI 미로탐색</h1>
+        <div id="maze-container"></div>
+        <div>
+            <button onclick="startExploration()">탐색 시작</button>
+            <button onclick="resetMazePage()">탐색 종료</button>
+            <button onclick="skipCurrentExploration()">스킵</button> <!-- 스킵 버튼 추가 -->
+        </div>
+        <div id="status"></div>
+        <p>AI 탐색 시도 횟수: <span id="attempt-count">0</span></p>
+        <div id="step-info"></div>
+        <button onclick="window.location.href='/';">메인으로 가기</button>
+    </div>
+
+    <script>
+        let mazeSize = 10;
+        let maze = Array(mazeSize).fill().map(() => Array(mazeSize).fill(0));  // 기본적으로 길로 채움
+        let isExploring = false;  // 탐색 중 여부
+        let skipRequested = false; // 스킵 요청 여부
+        let isMouseDown = false; // 마우스 드래그 상태
+        let lastRow = null; // 마지막으로 드래그한 행
+        let lastCol = null; // 마지막으로 드래그한 열
+
+        const startPos = [0, 0];  // 시작점 위치
+        const goalPos = [mazeSize - 1, mazeSize - 1];  // 목표점 위치
+    
+        //// 마우스 업 시 플래그 초기화
+        document.addEventListener('mouseup', () => {
+            isMouseDown = false;
+            changedCells.clear();
+        });
+    
+        // 미로 렌더링 시 이벤트 리스너 추가
+        function renderMaze() {
+            let mazeHTML = '<table>';
+            for (let i = 0; i < maze.length; i++) {
+                mazeHTML += '<tr>';
+                for (let j = 0; j < maze[i].length; j++) {
+                    let cellClass = 'path';
+                    if (i === startPos[0] && j === startPos[1]) {
+                        cellClass = 'start';
+                    } else if (i === goalPos[0] && j === goalPos[1]) {
+                        cellClass = 'goal';
+                    } else if (maze[i][j] === 1) {
+                        cellClass = 'wall';
+                    }
+                    mazeHTML += `<td class="${cellClass}" data-row="${i}" data-col="${j}"></td>`;
+                }
+                mazeHTML += '</tr>';
+            }
+            mazeHTML += '</table>';
+            document.getElementById('maze-container').innerHTML = mazeHTML;
+
+            const cells = document.querySelectorAll('td');
+            cells.forEach(cell => {
+                cell.addEventListener('mousedown', startDrag);
+                cell.addEventListener('mouseover', dragMove);
+                cell.addEventListener('click', handleCellClick);  // 클릭 이벤트 추가
+            });
+        }
+    
+        /// 드래그 이동 이벤트
+        function dragMove(event) {
+            if (!isMouseDown) return;
+
+            const cell = event.target;
+            if (cell.tagName === 'TD') {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                if (!changedCells.has(getCellKey(row, col))) {
+                    toggleCellWithTracking(row, col);
+                }
+            }
+        }
+    
+        // 셀 상태 직접 토글
+        function toggleCellDirect(row, col) {
+            maze[row][col] = maze[row][col] === 1 ? 0 : 1;
+            renderMaze();
+        }
+
+        // 토글 시 상태 변경과 추적
+        function toggleCellWithTracking(row, col) {
+            if (isFixedCell(row, col)) return;  // 시작점과 목표점은 변경 불가
+            const cellKey = getCellKey(row, col);
+            if (!changedCells.has(cellKey)) {
+                toggleCellDirect(row, col);
+                changedCells.add(cellKey); // 셀 상태 변경 기록
+            }
+        }
+
+        // 클릭 이벤트 핸들러
+        function handleCellClick(event) {
+            if (isMouseDown) return;  // 클릭 중 드래그가 활성화된 경우 실행 방지
+            const cell = event.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            toggleCellDirect(row, col);  // 클릭 시 셀 상태 토글
+        }
+    
+        // 드래그 시작 이벤트
+        function startDrag(event) {
+            isMouseDown = true;
+            changedCells.clear(); // 셀 상태 초기화
+            const cell = event.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            toggleCellWithTracking(row, col); // 상태 변경 추적
+        }
+
+        // 드래그 중 셀 상태 변경
+        function dragMove(event) {
+            if (!isMouseDown) return;
+
+            const cell = event.target;
+            if (cell.tagName === 'TD') {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+
+                if (row !== lastRow || col !== lastCol) {
+                    toggleCellDirect(row, col);
+                    lastRow = row;
+                    lastCol = col;
+                }
+            }
+        }
+    
+        function startExploration() {
+            if (isExploring) {
+                document.getElementById('status').textContent = '이미 탐색 중입니다.';
+                return;
+            }
+    
+            // 탐색 시작 시 status 초기화
+            document.getElementById('status').textContent = ''; 
+            document.getElementById('attempt-count').textContent = 0; // 시도 횟수 업데이트
+    
+            isExploring = true;
+            skipRequested = false;
+    
+            fetch('/start_exploration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ maze: maze })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.path) {
+                    renderPaths(data.path);
+                } else {
+                    document.getElementById('status').textContent = '탐색 가능한 경로가 존재하지 않습니다.';
+                }
+            });
+        }
+    
+        function renderPaths(paths) {
+            if (!paths) {
+                alert("경로를 찾을 수 없습니다.");
+                return;
+            }
+    
+            let attemptCount = 0;
+            let pathIndex = 0;
+    
+            const renderNextPath = () => {
+                if (pathIndex >= paths.length) {
+                    isExploring = false; // 탐색 종료
+                    skipRequested = false; // 스킵 플래그 초기화
+                    return;
+                }
+    
+                if (skipRequested) {
+                    skipRequested = false; // 스킵 플래그 초기화
+                    attemptCount++; // 스킵도 시도 횟수로 간주
+                    document.getElementById('attempt-count').textContent = attemptCount; // 시도 횟수 업데이트
+                    pathIndex+=100; // 다음 경로로 이동
+                    renderNextPath(); // 다음 경로 렌더링
+                    return;
+                }
+    
+                let path = paths[pathIndex];
+                let currentStep = 0;
+                const totalSteps = path.length;
+    
+                const interval = setInterval(() => {
+                    if (currentStep < totalSteps && !skipRequested) {
+                        let [x, y] = path[currentStep];
+                        renderMaze();
+                        document.querySelectorAll('td')[x * mazeSize + y].style.backgroundColor = '#00FF00';
+                        document.getElementById('step-info').textContent = `현재 탐색 횟수: ${currentStep + 1} / ${totalSteps}`;
+                        currentStep++;
+                    } else {
+                        clearInterval(interval);
+                        if (!skipRequested) {
+                            attemptCount++; // 경로 끝날 때 탐색 횟수 증가 (스킵 시 중복 방지)
+                            document.getElementById('attempt-count').textContent = attemptCount; // 시도 횟수 업데이트
+                            pathIndex+=100; // 다음 경로로 이동
+                        }
+                        renderNextPath(); // 다음 경로 렌더링
+                    }
+                }, 50);
+            };
+    
+            renderNextPath(); // 첫 번째 경로 렌더링
+        }
+    
+        function skipCurrentExploration() {
+            if (!isExploring) {
+                document.getElementById('status').textContent = '탐색 중이 아닙니다.';
+                return;
+            }
+            skipRequested = true; // 스킵 요청
+        }
+    
+        function resetMazePage() {
+            location.reload(); // 페이지 새로고침
+        }
+    
+        // 시작점과 목표점은 고정
+        function isFixedCell(row, col) {
+            return (row === startPos[0] && col === startPos[1]) || (row === goalPos[0] && col === goalPos[1]);
+        }
+    
+        renderMaze();
+    </script>    
+</body>
+</html>

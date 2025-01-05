@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가위바위보 게임</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            font-size: 36px;
+            color: #333;
+            margin-top: 50px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            text-align: center;
+        }
+        .choice-btn {
+            font-size: 18px;
+            padding: 12px 25px;
+            margin: 15px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .choice-btn:hover {
+            background-color: #45a049;
+        }
+        .result {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #333;
+        }
+        #decision-process {
+            display: none;
+            margin-top: 40px;
+        }
+        #wins, #losses, #draws {
+            font-size: 20px;
+            margin: 10px 0;
+            color: #555;
+        }
+        #wins {
+            color: #28a745;
+        }
+        #losses {
+            color: #dc3545;
+        }
+        #draws {
+            color: #ffc107;
+        }
+        .footer {
+            margin-top: 50px;
+            font-size: 16px;
+            color: #777;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .charts-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .chart {
+            width: 45%;
+        }
+    </style>
+    <script>
+        let previousWinRateData = null;
+
+        async function playGame(choice) {
+            const response = await fetch('/play', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `choice=${choice}`
+            });
+            const data = await response.json();
+
+            document.getElementById('result').innerText =
+                `당신의 선택: ${data.user_choice}, AI의 선택: ${data.ai_choice}. 결과: ${data.result}`;
+
+            // 승률 그래프 데이터 업데이트 (데이터가 변경된 경우에만 업데이트)
+            if (!previousWinRateData || !arraysEqual(data.win_rate_data.labels, previousWinRateData.labels) || !arraysEqual(data.win_rate_data.data, previousWinRateData.data)) {
+                updateWinRateChart(data.win_rate_data);
+                previousWinRateData = data.win_rate_data;
+            }
+
+            // AI 선택 행동 그래프 업데이트
+            updateActionChart(data.action_data);
+
+            // 승패 무승부 횟수 업데이트
+            document.getElementById('wins').innerText = `승리: ${data.wins}`;
+            document.getElementById('losses').innerText = `패배: ${data.losses}`;
+            document.getElementById('draws').innerText = `무승부: ${data.draws}`;
+
+            // 게임 결과가 나오면 'AI의 의사 결정 과정'과 'Q-테이블 값' 보이기
+            document.getElementById('decision-process').style.display = 'block';
+        }
+
+        // 배열 비교 함수 (차트 데이터가 변경되었는지 확인)
+        function arraysEqual(arr1, arr2) {
+            if (arr1.length !== arr2.length) return false;
+            for (let i = 0; i < arr1.length; i++) {
+                if (arr1[i] !== arr2[i]) return false;
+            }
+            return true;
+        }
+
+        async function resetGame() {
+            const response = await fetch('/rps-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            alert(data.status);  // AI 상태가 초기화되었다는 알림
+            window.location.reload();
+        }
+
+        // 승률 그래프 업데이트
+        function updateWinRateChart(data) {
+            console.log('Updating win rate chart:', data); // Debugging line
+
+            const ctx = document.getElementById('win-rate-chart').getContext('2d');
+
+            // 기존 차트가 있으면 파괴
+            if (window.winRateChart) {
+                console.log('Destroying previous win rate chart'); // Debugging line
+                window.winRateChart.destroy();
+            }
+
+            // 새로운 차트 생성
+            window.winRateChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '승률',
+                        data: data.data,
+                        fill: false,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: '게임 횟수' } },
+                        y: { title: { display: true, text: '승률' }, min: 0, max: 100 }
+                    }
+                }
+            });
+        }
+
+        // AI 행동 그래프 업데이트
+        function updateActionChart(data) {
+            const ctx = document.getElementById('action-chart').getContext('2d');
+            
+            // 기존 차트가 있으면 파괴
+            if (window.actionChart) {
+                window.actionChart.destroy();
+            }
+
+            // 새로운 차트 생성
+            window.actionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'AI 행동 강도',
+                        data: data.data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgb(75, 192, 192)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Q 값' }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>가위바위보 게임</h1>
+        <p>당신의 선택은?:</p>
+        <button class="choice-btn" onclick="playGame('rock')">바위</button>
+        <button class="choice-btn" onclick="playGame('paper')">보</button>
+        <button class="choice-btn" onclick="playGame('scissors')">가위</button>
+
+        <div class="result" id="result"></div>
+
+        <div>
+            <p id="wins">승리: 0</p>
+            <p id="losses">패배: 0</p>
+            <p id="draws">무승부: 0</p>
+        </div>
+
+        <div id="decision-process">
+            <h2>AI의 의사 결정 과정</h2>
+            <div class="charts-container">
+                <!-- 승률 그래프 -->
+                <div class="chart">
+                    <canvas id="win-rate-chart"></canvas>
+                </div>
+                <!-- AI 선택 행동 그래프 -->
+                <div class="chart">
+                    <canvas id="action-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <button class="choice-btn" onclick="resetGame()">새로운 게임</button>
+        <button class="choice-btn" onclick="window.location.href='/';">메인으로 가기</button>
+    </div>
+
+    <div class="footer">
+        <p>© SMC_2025 가위바위보 게임.</p>
+    </div>
+</body>
+</html>

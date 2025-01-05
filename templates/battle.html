@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전투</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .battle-stats {
+            display: flex;
+            justify-content: space-between; /* 좌우 배치 */
+            align-items: center;
+            width: 80%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .health-display {
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            flex: 1; /* 좌우 균등 분배 */
+        }
+
+        #player-health {
+            color: #3498db;
+        }
+
+        #enemy-health {
+            color: #e74c3c;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:active {
+            background-color: #388e3c;
+        }
+
+        #battle-log {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #log-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #log-list li {
+            background-color: #e0e0e0;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #game-exit-button {
+            background-color: #e74c3c;
+            margin-top: 20px;
+        }
+        .charts-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 80%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        .chart {
+            width: 45%;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #battle-container {
+            display: flex;
+            justify-content: space-between; /* 좌우 배치 */
+            align-items: flex-start; /* 위쪽 정렬 */
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        #battle-log {
+            flex: 1;
+            max-width: 400px; /* 로그 영역의 최대 너비 */
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        #left-chart, #right-chart {
+            flex: 1;
+            max-width: 300px; /* 차트 영역의 최대 너비 */
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>전투 중: {{ player.name }} vs {{ enemy.name }}</h1>
+
+    <div id="battle-info" 
+        data-stage-level="{{ stage_level }}" 
+        data-player-type="{{ player_type }}" 
+        class="battle-stats">
+        <div class="health-display">플레이어 HP: <span id="player-health">{{ player.health }}</span></div>
+        <div class="health-display">적 HP: <span id="enemy-health">{{ enemy.health }}</span></div>
+    </div>
+
+    <!-- 행동 버튼 -->
+    <div>
+        <button onclick="chooseAction('공격')">공격</button>
+        <button onclick="chooseAction('방어')">방어</button>
+        <button onclick="chooseAction('회복')">회복</button>
+    </div>
+
+    <div id="battle-container">
+        <div id="left-chart">
+            <canvas id="q-value-chart"></canvas>
+        </div>
+    
+        <div id="battle-log">
+            <h3>전투 로그</h3>
+            <ul id="log-list"></ul>
+        </div>
+    
+        <div id="right-chart">
+            <canvas id="probability-chart"></canvas>
+        </div>
+    </div>
+
+    <button id="game-exit-button" onclick="location.href = '/roguelike'">게임 나가기</button>
+
+    <script>
+        // 전투 행동 선택 함수
+        function chooseAction(action) {
+            const battleInfo = document.getElementById('battle-info');
+            const stageLevel = battleInfo.getAttribute('data-stage-level');
+            const playerType = battleInfo.getAttribute('data-player-type');
+    
+            $.ajax({
+                url: "/choose_action",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ 
+                    action: action,
+                    stage_level: stageLevel,
+                    player_type: playerType
+                }),
+                success: function(response) {
+                    if (response.message && response.stage_level) {
+                        battleInfo.setAttribute('data-stage-level', response.stage_level);
+                        alert(`스테이지 ${response.stage_level}로 진행합니다!`);
+                        $('#log-list').prepend(`<li>${response.message}</li>`);
+                    } else {
+                        $('#player-health').text(response.player_health);
+                        $('#enemy-health').text(response.enemy_health);
+                        $('#log-list').prepend(`<li>${response.round_result}</li>`);
+    
+                        updateQValueChart(response.q_values);
+                        updateProbabilityChart(response.probabilities);
+                        console.log("Q-값:", response.q_values);
+                        console.log("행동 확률:", response.probabilities);
+    
+                        if (response.is_battle_over) {
+                            const result = response.player_health > 0 
+                                ? "플레이어가 승리했습니다!" 
+                                : "플레이어가 패배했습니다!";
+                            $('#battle-log').append(`<p>${result}</p>`);
+    
+                            if (response.next_stage) {
+                                $('#battle-log').append(`<p>다음 스테이지로 진행합니다!</p>`);
+                            } else {
+                                $('#battle-log').append(`<p>게임이 종료되었습니다!</p>`);
+                            }
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    if (xhr.status === 400) {
+                        const errorMessage = xhr.responseJSON.error;
+                        alert(errorMessage);
+                        window.location.href = "/roguelike";
+                    } else {
+                        alert("오류가 발생했습니다. 다시 시도하세요.");
+                    }
+                }
+            });
+        }
+    
+        // Q-값 차트 초기화
+        const qValueCtx = document.getElementById('q-value-chart').getContext('2d');
+        const qValueChart = new Chart(qValueCtx, {
+            type: 'bar',
+            data: {
+                labels: ['공격', '방어', '회복'],
+                datasets: [{
+                    label: 'Q-값',
+                    data: [0, 0, 0],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    
+        // Q-값 차트 업데이트
+        function updateQValueChart(qValues) {
+            qValueChart.data.datasets[0].data = qValues;
+            qValueChart.update();
+        }
+    
+        // 확률 차트 초기화
+        const probabilityCtx = document.getElementById('probability-chart').getContext('2d');
+        const probabilityChart = new Chart(probabilityCtx, {
+            type: 'pie',
+            data: {
+                labels: ['공격', '방어', '회복'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+    
+        // 확률 차트 업데이트
+        function updateProbabilityChart(probabilities) {
+            probabilityChart.data.datasets[0].data = probabilities;
+            probabilityChart.update();
+        }
+    </script>    
+</body>
+</html>

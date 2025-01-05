@@ -1,0 +1,29 @@
+[
+  {
+    "type": "공격형",
+    "stats": {
+      "hp": 70,
+      "attack": 20,
+      "defense": 5,
+      "speed": 15
+    }
+  },
+  {
+    "type": "방어형",
+    "stats": {
+      "hp": 100,
+      "attack": 15,
+      "defense": 15,
+      "speed": 10
+    }
+  },
+  {
+    "type": "복합형",
+    "stats": {
+      "hp": 80,
+      "attack": 25,
+      "defense": 5,
+      "speed": 12
+    }
+  }
+]
